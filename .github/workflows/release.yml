@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+      - name: Install dependencies
+        run: |
+          uv pip install pyinstaller
+          uv sync
+      - name: Build binary
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            # Windows用のビルド処理
+            uv run pyinstaller --distpath=dist/prod --workpath=build/prod --specpath=. --name=llmpack --onefile --clean src/llmpack/cli.py
+            mkdir -p dist
+            cp dist/prod/llmpack.exe dist/llmpack-windows.exe
+          else
+            # Linux/macOS用のビルド処理
+            uv run make prod
+            mkdir -p dist
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              cp dist/prod/llmpack dist/llmpack-linux
+            else
+              cp dist/prod/llmpack dist/llmpack-macos
+            fi
+          fi
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: llmpack-${{ matrix.os }}
+          path: dist/llmpack-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          cp artifacts/llmpack-ubuntu-latest/llmpack-linux release-assets/
+          cp artifacts/llmpack-macos-latest/llmpack-macos release-assets/
+          cp artifacts/llmpack-windows-latest/llmpack-windows.exe release-assets/
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
