@@ -24,7 +24,6 @@ jobs:
           pip install uv
       - name: Install dependencies
         run: |
-          uv pip install pyinstaller
           uv sync
       - name: Build binary
         shell: bash
