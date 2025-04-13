@@ -13,7 +13,7 @@ jobs:
         uses: Justintime50/homebrew-releaser@v2
         with:
           # The name of the homebrew tap to publish your formula to as it appears on GitHub.
-          homebrew_owner: halst256
+          homebrew_owner: harukaxq
           homebrew_tap: homebrew-tools
 
           # The folder in your homebrew tap where formula will be committed to.
