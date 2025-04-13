@@ -18,7 +18,7 @@ A command-line tool for combining code files into a single markdown document, de
 
 ```bash
 # Install from Homebrew tap
-brew tap halst256/tools
+brew tap harukaxq/tools
 brew install llmpack
 ```
 
@@ -26,7 +26,7 @@ brew install llmpack
 
 ```bash
 # Clone the repository
-git clone https://github.com/halst256/llmpack.git
+git clone https://github.com/harukaxq/llmpack.git
 cd llmpack
 
 # Install in development mode

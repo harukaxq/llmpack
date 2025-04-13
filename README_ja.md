@@ -18,7 +18,7 @@ LLMPack は、コードファイルを1つのマークダウンドキュメン�
 
 ```bash
 # Homebrew tap からインストール
-brew tap halst256/tools
+brew tap harukaxq/tools
 brew install llmpack
 ```
 
@@ -26,7 +26,7 @@ brew install llmpack
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/halst256/llmpack.git
+git clone https://github.com/harukaxq/llmpack.git
 cd llmpack
 
 # 開発モードでインストール
