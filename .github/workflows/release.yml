@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
         python-version: ['3.12']
     steps:
       - uses: actions/checkout@v4
@@ -58,12 +58,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: List artifacts
+        run: ls -R artifacts/
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          cp artifacts/llmpack-ubuntu-latest/llmpack-linux release-assets/
-          cp artifacts/llmpack-macos-latest/llmpack-macos release-assets/
-          cp artifacts/llmpack-windows-latest/llmpack-windows.exe release-assets/
+          find artifacts -type f -name "llmpack-*" -exec cp {} release-assets/ \;
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
