@@ -1,0 +1,47 @@
+name: Homebrew Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  homebrew-releaser:
+    runs-on: ubuntu-latest
+    name: homebrew-releaser
+    steps:
+      - name: Release project to Homebrew tap
+        uses: Justintime50/homebrew-releaser@v2
+        with:
+          # The name of the homebrew tap to publish your formula to as it appears on GitHub.
+          homebrew_owner: halst256
+          homebrew_tap: homebrew-tools
+
+          # The folder in your homebrew tap where formula will be committed to.
+          formula_folder: Formula
+
+          # The Personal Access Token that has `repo` permissions for the repo running the action AND Homebrew tap.
+          github_token: ${{ secrets.TAP_REPO_PAT }}
+
+          # Git author info used to commit to the homebrew tap.
+          commit_owner: github-actions[bot]
+          commit_email: github-actions[bot]@users.noreply.github.com
+
+          # Install command for your formula.
+          install: |
+            venv = virtualenv_create(libexec, "python3.12")
+            system libexec/"bin/pip", "install", "-v", "--no-deps", buildpath
+            (bin/"llmpack").write_env_script libexec/"bin/llmpack", PATH: "#{libexec}/bin:$PATH"
+
+          # Test command for your formula, used for `brew test`.
+          test: 'system "#{bin}/llmpack", "--help"'
+
+          # Custom dependencies
+          depends_on: |
+            "python@3.12"
+
+          # Skip committing the generated formula to a homebrew tap (useful for first run).
+          # Set to true for the first run, then set to false after verifying.
+          skip_commit: false
+
+          # Logs debugging info to console.
+          debug: true

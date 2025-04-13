@@ -1,6 +1,6 @@
 # Deploying to Homebrew
 
-This document provides instructions for deploying LLMPack to Homebrew using GitHub Actions for automation.
+This document provides instructions for deploying LLMPack to Homebrew using GitHub Actions with homebrew-releaser for automation.
 
 ## Prerequisites
 
@@ -8,13 +8,13 @@ This document provides instructions for deploying LLMPack to Homebrew using GitH
 2. A GitHub repository for the Homebrew tap (`halst256/homebrew-tools`)
 3. Homebrew installed on your system for testing
 
-## Automated Deployment with GitHub Actions
+## Automated Deployment with homebrew-releaser
 
-This project uses GitHub Actions to automatically update the Homebrew formula whenever a new release is published. The workflow performs the following steps:
+This project uses [homebrew-releaser](https://github.com/Justintime50/homebrew-releaser) via GitHub Actions to automatically update the Homebrew formula whenever a new release is published. The workflow performs the following steps:
 
 1. When a new release is published on GitHub, the workflow is triggered
-2. The workflow calculates the SHA256 checksum of the release tarball
-3. The workflow updates the formula in the Homebrew tap repository
+2. homebrew-releaser calculates the SHA256 checksum of the release tarball
+3. homebrew-releaser generates and updates the formula in the Homebrew tap repository
 4. Users can then install or update the package using Homebrew
 
 ### Setting Up GitHub Actions
@@ -33,7 +33,7 @@ This project uses GitHub Actions to automatically update the Homebrew formula wh
    - Value: Paste the PAT you created
    - Click `Add secret`
 
-3. **Create the Homebrew Tap Repository**:
+3. **Create the Homebrew Tap Repository** (if not already created):
    - Create a new GitHub repository named `homebrew-tools`
    - Clone the repository:
      ```bash
@@ -44,14 +44,10 @@ This project uses GitHub Actions to automatically update the Homebrew formula wh
      ```bash
      mkdir -p Formula
      ```
-   - Copy the formula file from this repository:
-     ```bash
-     cp /path/to/llmpack/Formula/llmpack.rb Formula/
-     ```
    - Commit and push:
      ```bash
-     git add Formula/llmpack.rb
-     git commit -m "Add LLMPack formula"
+     git add .
+     git commit -m "Initialize Homebrew tap"
      git push origin main
      ```
 
@@ -85,10 +81,10 @@ To create a new release and trigger the automatic formula update:
    - Add release notes
    - Click "Publish release"
 
-5. The GitHub Actions workflow will automatically:
+5. The homebrew-releaser GitHub Actions workflow will automatically:
    - Calculate the SHA256 checksum of the release tarball
-   - Update the formula in the Homebrew tap repository
-   - Commit and push the changes
+   - Generate and update the formula in the Homebrew tap repository
+   - Commit and push the changes to your tap repository
 
 ## Installing from the Tap
 
@@ -126,3 +122,15 @@ brew install --build-from-source ./Formula/llmpack.rb
 brew tap halst256/tools /path/to/local/homebrew-tools
 brew install --build-from-source halst256/tools/llmpack
 ```
+
+## Homebrew Releaser Configuration
+
+The homebrew-releaser configuration is defined in `.github/workflows/homebrew-release.yml` and includes:
+
+- Automatic formula generation when a new release is published
+- Proper dependency management for Python
+- Installation and test commands
+- Automatic SHA256 checksum calculation
+- Automatic commit to the Homebrew tap repository
+
+For more details on the available configuration options, see the [homebrew-releaser documentation](https://github.com/Justintime50/homebrew-releaser).
