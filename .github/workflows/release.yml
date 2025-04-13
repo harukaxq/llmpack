@@ -76,5 +76,8 @@ jobs:
           prerelease: false
           generate_release_notes: true
           name: Release ${{ github.ref_name }}
+          body: |
+            Release ${{ github.ref_name }}
+          discussion_category_name: Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
