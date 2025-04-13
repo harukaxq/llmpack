@@ -72,7 +72,7 @@ jobs:
         with:
           files: |
             release-assets/*
-          draft: false
+          draft: true
           prerelease: false
           generate_release_notes: true
         env:
