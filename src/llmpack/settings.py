@@ -29,7 +29,7 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 # Default settings
 DEFAULT_SETTINGS = {
     "llm_provider": "gemini",
-    "llm_model": "gemini-1.5-pro",  # Default model for the default provider
+    "llm_model": "gemini-2.5-pro-preview-03-25",  # Default model for the default provider
     "language": "en",
     "api_keys": {
         "openai": "",

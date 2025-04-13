@@ -7,11 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pathspec>=0.12.1",
     "rich>=13.0.0",
-    "langchain>=0.3.23",
-    "langchain-openai>=0.3.12",
-    "langchain-anthropic>=0.3.10",
-    "langchain-google-genai>=2.1.2",
-    "langchain-ollama>=0.3.1",
+    "requests>=2.31.0",
     "pyinstaller>=6.12.0",
 ]
 

@@ -2,23 +2,16 @@
 LLMPack LLM - LLM query execution for LLMPack tool.
 
 This module provides functionality to:
-1. Initialize and configure LLM providers using LangChain
+1. Initialize and configure LLM providers using direct API requests
 2. Execute queries with user prompts and predefined instruction templates
 3. Handle responses from different LLM providers
 """
 import os
-from typing import Optional, Dict, Any
+import json
+import requests
+from typing import Optional, Dict, Any, List
 import logging
 from rich.logging import RichHandler
-
-from langchain_core.language_models import LLM, BaseChatModel
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 
 from llmpack.settings import get_api_key, get_setting
 from llmpack.model_manager import get_default_model_for_provider
@@ -31,7 +24,127 @@ logging.basicConfig(
 )
 logger = logging.getLogger("llmpack.llm")
 
-def initialize_llm(provider: Optional[str] = None) -> Optional[BaseChatModel]:
+class LLMProvider:
+    """Base class for LLM providers"""
+    def __init__(self, model: str, api_key: Optional[str] = None):
+        self.model = model
+        self.api_key = api_key
+        
+    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+        """Generate a response from the LLM"""
+        raise NotImplementedError("Subclasses must implement this method")
+
+class OpenAIProvider(LLMProvider):
+    """OpenAI API provider implementation"""
+    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+        data = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.0
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            logger.error(f"Error calling OpenAI API: {e}")
+            return None
+
+class AnthropicProvider(LLMProvider):
+    """Anthropic API provider implementation"""
+    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01"
+        }
+        data = {
+            "model": self.model,
+            "system": system_prompt,
+            "messages": [
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.0
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            return response.json()["content"][0]["text"]
+        except Exception as e:
+            logger.error(f"Error calling Anthropic API: {e}")
+            return None
+
+class GeminiProvider(LLMProvider):
+    """Google Gemini API provider implementation"""
+    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+        # Combine system prompt and user prompt for Gemini
+        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+        
+        return self._generate_non_stream(combined_prompt)
+    
+    def _generate_non_stream(self, prompt: str) -> str:
+        """Use the non-streaming API"""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        params = {
+            "key": self.api_key
+        }
+        
+        data = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.0
+            }
+        }
+        
+        response = requests.post(url, headers=headers, params=params, json=data)
+        response.raise_for_status()
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    
+
+class OllamaProvider(LLMProvider):
+    """Ollama API provider implementation"""
+    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+        url = "http://localhost:11434/api/chat"
+        data = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "stream": False,
+            "options": {
+                "temperature": 0.0
+            }
+        }
+        
+        try:
+            response = requests.post(url, json=data)
+            response.raise_for_status()
+            return response.json()["message"]["content"]
+        except Exception as e:
+            logger.error(f"Error calling Ollama API: {e}")
+            return None
+
+def initialize_llm(provider: Optional[str] = None) -> Optional[LLMProvider]:
     """
     Initialize the LLM based on the provider and model specified in settings or passed as argument.
     
@@ -39,7 +152,7 @@ def initialize_llm(provider: Optional[str] = None) -> Optional[BaseChatModel]:
         provider: Optional provider name to override the setting
         
     Returns:
-        Initialized LLM instance or None if initialization fails
+        Initialized LLM provider instance or None if initialization fails
     """
     if provider is None:
         provider = get_setting("llm_provider")
@@ -69,28 +182,13 @@ def initialize_llm(provider: Optional[str] = None) -> Optional[BaseChatModel]:
     
     try:
         if provider == "openai":
-            return ChatOpenAI(
-                model=model,
-                api_key=api_key, # type: ignore
-                temperature=0.0
-            )
+            return OpenAIProvider(model=model, api_key=api_key)
         elif provider == "anthropic":
-            return ChatAnthropic(
-                model_name=model,
-                api_key=api_key, # type: ignore
-                temperature=0.0
-            )
+            return AnthropicProvider(model=model, api_key=api_key)
         elif provider == "gemini":
-            return ChatGoogleGenerativeAI(
-                model=model,
-                api_key=api_key, # type: ignore
-                temperature=0.0
-            )
+            return GeminiProvider(model=model, api_key=api_key)
         elif provider == "ollama":
-            return ChatOllama(
-                model=model,
-                temperature=0.0
-            )
+            return OllamaProvider(model=model)
         else:
             logger.error(f"Unsupported LLM provider: {provider}")
             return None
@@ -142,19 +240,18 @@ def query_llm(task: str, provider: Optional[str] = None) -> Optional[str]:
     instruction_prompt = get_setting("instruction_prompt")
     language = get_setting("language")
     
-    # Prepare the prompt template with combined content
-    system_message = SystemMessage(content=f"You are a helpful AI assistant. Respond in {language}.")
-    human_message = HumanMessage(content=f"{instruction_prompt}\n\n{task}\n\nHere is the combined code from the project:\n\n{combined_content}")
+    # Prepare the prompts
+    system_prompt = f"You are a helpful AI assistant. Respond in {language}."
+    user_prompt = f"{instruction_prompt}\n\n{task}\n\nHere is the combined code from the project:\n\n{combined_content}"
     
     try:
-        # Create prompt and chain
-        prompt = ChatPromptTemplate.from_messages([system_message, human_message])
-        chain = prompt | llm | StrOutputParser()
-        
         # Execute query
         logger.info(f"Querying {provider or get_setting('llm_provider')}...")
-        response = chain.invoke({})
+        response = llm.generate(system_prompt, user_prompt)
         return response
     except Exception as e:
         logger.error(f"Error querying LLM: {e}")
         return None
+
+if __name__ == "__main__":
+    query_llm("こんにちは〜", "gemini")
