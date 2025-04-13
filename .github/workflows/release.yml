@@ -56,6 +56,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for tag to be available
+        run: |
+          for i in {1..30}; do
+            if git ls-remote --tags origin | grep -q ${{ github.ref }}; then
+              echo "Tag is available"
+              exit 0
+            fi
+            echo "Waiting for tag to be available... ($i/30)"
+            sleep 2
+          done
+          echo "Tag not found after 60 seconds"
+          exit 1
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
