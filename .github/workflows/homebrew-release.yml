@@ -28,9 +28,11 @@ jobs:
 
           # Install command for your formula.
           install: |
-            venv = virtualenv_create(libexec, "python3.12")
-            system libexec/"bin/pip", "install", "-v", "--no-deps", buildpath
-            (bin/"llmpack").write_env_script libexec/"bin/llmpack", PATH: "#{libexec}/bin:$PATH"
+            bin.install Dir["bin/*"]
+            libexec.install Dir["*"]
+            (bin/"llmpack").write_env_script libexec/"bin/llmpack",
+              PATH: "#{libexec}/bin:$PATH",
+              PYTHONPATH: ENV["PYTHONPATH"]
 
           # Test command for your formula, used for `brew test`.
           test: 'system "#{bin}/llmpack", "--help"'
