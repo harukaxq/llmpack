@@ -28,18 +28,28 @@ jobs:
 
           # Install command for your formula.
           install: |
-            bin.install Dir["bin/*"]
-            libexec.install Dir["*"]
-            (bin/"llmpack").write_env_script libexec/"bin/llmpack",
-              PATH: "#{libexec}/bin:$PATH",
-              PYTHONPATH: ENV["PYTHONPATH"]
-
-          # Test command for your formula, used for `brew test`.
-          test: 'system "#{bin}/llmpack", "--help"'
-
-          # Custom dependencies
-          depends_on: |
-            "python@3.12"
+            if OS.mac?
+              # Download pre-built binary for macOS
+              binary_url = "https://github.com/harukaxq/llmpack/releases/download/v#{version}/llmpack-macos"
+              binary_path = libexec/"bin/llmpack"
+              
+              # Create necessary directories
+              bin.mkpath
+              libexec.mkpath
+              (libexec/"bin").mkpath
+              
+              # Download and install binary
+              curl_download binary_url, binary_path
+              chmod 0755, binary_path
+              
+              # Create wrapper script
+              (bin/"llmpack").write_env_script binary_path, PATH: "#{libexec}/bin:$PATH"
+            else
+              # Fallback to source installation if binary is not available for the platform
+              venv = virtualenv_create(libexec, "python3.12")
+              system libexec/"bin/pip", "install", "-v", "--no-deps", buildpath
+              (bin/"llmpack").write_env_script libexec/"bin/llmpack", PATH: "#{libexec}/bin:$PATH"
+            end
 
           # Skip committing the generated formula to a homebrew tap (useful for first run).
           # Set to true for the first run, then set to false after verifying.
