@@ -15,7 +15,7 @@ PROD_DIST_DIR = dist/prod
 PROD_BUILD_DIR = build/prod
 PROD_SPEC_FILE = $(PROD_APP_NAME).spec
 
-.PHONY: all clean dev prod install fish-path
+.PHONY: all clean dev prod install fish-path upx-compress
 
 # Default target
 all: dev prod
@@ -28,27 +28,27 @@ install:
 dev:
 	mkdir -p $(DEV_DIST_DIR)
 	uv run pyinstaller --distpath=$(DEV_DIST_DIR) --workpath=$(DEV_BUILD_DIR) \
-		--specpath=. --name=$(DEV_APP_NAME) \
+		--specpath=./spec --name=$(DEV_APP_NAME) \
 		--hidden-import=pydantic --hidden-import=pydantic_core --hidden-import=pydantic.deprecated.decorator \
 		--onefile $(SRC_FILE)
 	mv $(DEV_APP_NAME).spec $(DEV_SPEC_FILE)
 
 # Development binary generation (using existing spec file)
 dev-spec: $(DEV_SPEC_FILE)
-	uv run pyinstaller --distpath=$(DEV_DIST_DIR) --workpath=$(DEV_BUILD_DIR) $(DEV_SPEC_FILE)
+	uv run pyinstaller --distpath=$(DEV_DIST_DIR) --workpath=$(DEV_BUILD_DIR) ./spec/$(DEV_SPEC_FILE)
 
 # Production binary generation
 prod:
 	mkdir -p $(PROD_DIST_DIR)
 	uv run pyinstaller --distpath=$(PROD_DIST_DIR) --workpath=$(PROD_BUILD_DIR) \
-		--specpath=. --name=$(PROD_APP_NAME) \
+		--specpath=./spec --name=$(PROD_APP_NAME) \
 		--hidden-import=pydantic --hidden-import=pydantic_core --hidden-import=pydantic.deprecated.decorator \
 		--onefile --clean $(SRC_FILE)
 	mv $(PROD_APP_NAME).spec $(PROD_SPEC_FILE)
 
 # Production binary generation (using existing spec file)
 prod-spec: $(PROD_SPEC_FILE)
-	uv run pyinstaller --distpath=$(PROD_DIST_DIR) --workpath=$(PROD_BUILD_DIR) $(PROD_SPEC_FILE)
+	uv run pyinstaller --distpath=$(PROD_DIST_DIR) --workpath=$(PROD_BUILD_DIR) ./spec/$(PROD_SPEC_FILE)
 
 # Add to fish path (for development)
 fish-path:
@@ -64,6 +64,24 @@ clean:
 	rm -rf $(DEV_DIST_DIR) $(DEV_BUILD_DIR) $(PROD_DIST_DIR) $(PROD_BUILD_DIR)
 	rm -f $(DEV_SPEC_FILE) $(PROD_SPEC_FILE)
 
+# UPX compression for binaries
+upx-compress:
+	@command -v upx >/dev/null 2>&1 || { echo "UPX is not installed. Please install it first."; exit 1; }
+	@echo "Compressing production binary with UPX..."
+	@if [ -f "$(PROD_DIST_DIR)/$(PROD_APP_NAME)" ]; then \
+		upx --best --lzma "$(PROD_DIST_DIR)/$(PROD_APP_NAME)"; \
+		echo "Production binary compressed successfully."; \
+	else \
+		echo "Production binary not found. Run 'make prod' first."; \
+	fi
+	@echo "Compressing development binary with UPX..."
+	@if [ -f "$(DEV_DIST_DIR)/$(DEV_APP_NAME)" ]; then \
+		upx --best --lzma "$(DEV_DIST_DIR)/$(DEV_APP_NAME)"; \
+		echo "Development binary compressed successfully."; \
+	else \
+		echo "Development binary not found. Run 'make dev' first."; \
+	fi
+
 # Help
 help:
 	@echo "Available targets:"
@@ -73,4 +91,5 @@ help:
 	@echo "  make clean      - Remove generated files"
 	@echo "  make install    - Install required dependencies"
 	@echo "  make fish-path  - Add development binary to fish shell path"
+	@echo "  make upx-compress - Compress binaries with UPX for smaller size"
 	@echo "  make help       - Display this help message"

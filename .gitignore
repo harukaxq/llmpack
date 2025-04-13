@@ -23,7 +23,6 @@ var/
 
 # PyInstaller
 *.manifest
-*.spec
 
 # Logs
 *.log
