@@ -1,0 +1,4 @@
+- コメント、コミットメッセージは必ず英語を使いなさい。
+- インポートはfrom src.llmpack  ではなく、from llmpack としてください。
+- 動作確認は make dev を実行後、dev_llmpack を実行してください。
+- pythonコマンドは直接実行せず、uv run python を実行してください。
