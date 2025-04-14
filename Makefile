@@ -31,7 +31,6 @@ dev:
 		--specpath=./spec --name=$(DEV_APP_NAME) \
 		--hidden-import=pydantic --hidden-import=pydantic_core --hidden-import=pydantic.deprecated.decorator \
 		--onefile $(SRC_FILE)
-	mv $(DEV_APP_NAME).spec $(DEV_SPEC_FILE)
 
 # Development binary generation (using existing spec file)
 dev-spec: $(DEV_SPEC_FILE)
@@ -44,7 +43,6 @@ prod:
 		--specpath=./spec --name=$(PROD_APP_NAME) \
 		--hidden-import=pydantic --hidden-import=pydantic_core --hidden-import=pydantic.deprecated.decorator \
 		--onefile --clean $(SRC_FILE)
-	mv $(PROD_APP_NAME).spec $(PROD_SPEC_FILE)
 
 # Production binary generation (using existing spec file)
 prod-spec: $(PROD_SPEC_FILE)
