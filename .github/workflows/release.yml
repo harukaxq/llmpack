@@ -25,18 +25,6 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync
-      - name: Install UPX
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            sudo apt-get update && sudo apt-get install -y upx-ucl
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            brew install upx
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            # Windows RunnerにはデフォルトでUPXが含まれている場合もあるので確認が必要
-            echo "UPX installation on Windows might require manual setup or different package manager"
-          fi
-          upx --version
-        shell: bash
       - name: Build binary
         shell: bash
         run: |
@@ -55,19 +43,6 @@ jobs:
               cp dist/prod/llmpack dist/llmpack-macos
             fi
           fi
-      - name: Compress binary with UPX
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            upx --best --lzma dist/prod/llmpack.exe
-            upx --best --lzma dist/llmpack-windows.exe
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            upx --best --lzma dist/prod/llmpack
-            upx --best --lzma dist/llmpack-linux
-          else
-            upx --best --lzma dist/prod/llmpack
-            upx --best --lzma dist/llmpack-macos
-          fi
-        shell: bash
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
