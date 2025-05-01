@@ -20,6 +20,8 @@ A command-line tool for combining code files into a single markdown document, de
 # Install from Homebrew tap
 brew tap harukaxq/tools
 brew install llmpack
+# or
+brew install harukaxq/tools/llmpack
 ```
 
 ### From Source
