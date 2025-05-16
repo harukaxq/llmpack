@@ -247,7 +247,7 @@ def combine_files(gitignore_data: List[Tuple[Path, str]], output_path: Path, pre
         ".css", ".scss", ".sass", ".less",
         
         # Python
-        ".py",
+        ".py", ".py-tpl"
         
         # Data/config files
         ".json", ".yml", ".yaml", ".toml",
